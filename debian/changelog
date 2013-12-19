@@ -1,6 +1,11 @@
-libzorpll (5.0.0.0) zorp50gpl; urgency=low
+libzorpll (5.0.0.0ubuntu1) quantal; urgency=low
 
-  * New upstream version.
+  * build fix 
 
- -- BalaBit Development Team <devel@balabit.hu>  Mon,  3 Feb 2003 15:44:47 +0100
+ -- Árpád Magosányi <mag@balabit.hu>  Thu, 19 Dec 2013 18:32:42 +0100
 
+libzorpll (5.0.0.0) quantal; urgency=low
+
+  * New upstream version
+
+ -- Árpád Magosányi <mag@balabit.hu>  Thu, 19 Dec 2013 13:32:37 +0100
