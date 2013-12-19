@@ -25,7 +25,7 @@
 
 /* source functions delegating prepare/check/dispatch/finalize to the stream
  * methods. */
- 
+
 /* GSource derived class used to implement ZStream callbacks */
 
 /**
@@ -104,7 +104,7 @@
  * reference counter of stream top's structure reaches zero, the stream top
  * itself will be freed when the application calls its final z_stream_unref().
  **/
- 
+
 static void z_stream_struct_ref(ZStream *self);
 static void z_stream_struct_unref(ZStream *self);
 
@@ -138,20 +138,20 @@ G_LOCK_DEFINE_STATIC(detach_lock);
  * g_source_get_can_recurse(), however the ZStream code creates this GSource
  * and currently it never uses recursive sources. If that assumption
  * changes, we need to properly check the recursion state.
- **/ 
+ **/
 static inline gboolean
 z_stream_source_grab_ref(ZStreamSource *self, gboolean in_call, ZStream **top_stream)
 {
   gboolean res = FALSE;
   ZStream *p;
-  
+
   /* NOTE: no z_enter() on purpose, it would generate a _lot_ of logs */
-  
+
   G_LOCK(detach_lock);
   for (p = self->stream; p; p = p->parent)
     {
       ZStreamSource *source = (ZStreamSource *) p->source;
-      
+
       if (!source || (source->super.flags & ((in_call ? 0 : G_HOOK_FLAG_IN_CALL) + G_HOOK_FLAG_ACTIVE)) != G_HOOK_FLAG_ACTIVE)
         {
           /* one of the streams has a pending destruction, bail out and don't call user callbacks */
@@ -174,7 +174,7 @@ z_stream_source_prepare(GSource *s, gint *timeout)
   ZStreamSource *self = (ZStreamSource *) s;
   gboolean ret = FALSE;
   ZStream *top_stream = NULL;
-  
+
   z_enter();
   if (!z_stream_source_grab_ref(self, FALSE, &top_stream))
     z_return(FALSE);
@@ -202,7 +202,7 @@ z_stream_source_check(GSource *s)
   z_enter();
   if (!z_stream_source_grab_ref(self, FALSE, &top_stream))
     z_return(FALSE);
-    
+
   if (self->stream->want_read && self->stream->ungot_bufs)
     ret = TRUE;
   else
@@ -238,13 +238,13 @@ z_stream_source_dispatch(GSource     *s,
   if (!ret)
     {
       /* NOTE: top_stream here is only a borrowed reference which might be
-       * freed during z_stream_detach_source causing an abort or segfault. 
+       * freed during z_stream_detach_source causing an abort or segfault.
        * Therefore we need to ref it to ensure a proper reference is passed
        * to the functions in the call chain.
        */
-       
+
       /* NOTE/2: I'm not sure that the NOTE above still applies, but ref/unref here won't hurt */
-       
+
       z_stream_ref(top_stream);
       z_stream_detach_source(top_stream);
       z_stream_unref(top_stream);
@@ -258,9 +258,9 @@ z_stream_source_finalize(GSource *s)
 {
   ZStreamSource *self = (ZStreamSource *) s;
   ZStream *stream;
-  
+
   z_enter();
-  
+
   /* NOTE: we don't call _struct_ref here as we are only called when that
    * already dropped to zero */
   z_stream_watch_finalize(self->stream, s);
@@ -274,11 +274,11 @@ z_stream_source_finalize(GSource *s)
 /**
  * ZStreamSource virtual methods.
  **/
-static GSourceFuncs 
-z_stream_source_funcs = 
+static GSourceFuncs
+z_stream_source_funcs =
 {
   z_stream_source_prepare,
-  z_stream_source_check,   
+  z_stream_source_check,
   z_stream_source_dispatch,
   z_stream_source_finalize,
   NULL,
@@ -299,7 +299,7 @@ GSource *
 z_stream_source_new(ZStream *stream)
 {
   ZStreamSource *self = (ZStreamSource *) g_source_new(&z_stream_source_funcs, sizeof(ZStreamSource));
-  
+
   z_enter();
   z_stream_ref(stream);
   self->stream = stream;
@@ -394,7 +394,7 @@ gboolean
 z_stream_ctrl_method(ZStream *s, guint function, gpointer value, guint vlen)
 {
   gboolean res = FALSE;
-  
+
   z_enter();
   switch (ZST_CTRL_MSG(function))
     {
@@ -405,7 +405,7 @@ z_stream_ctrl_method(ZStream *s, guint function, gpointer value, guint vlen)
           res = TRUE;
         }
       break;
-      
+
     case ZST_CTRL_SET_COND_READ:
       if (vlen == sizeof(gboolean))
         {
@@ -413,7 +413,7 @@ z_stream_ctrl_method(ZStream *s, guint function, gpointer value, guint vlen)
           res = TRUE;
         }
       break;
-      
+
     case ZST_CTRL_GET_COND_WRITE:
       if (vlen == sizeof(gboolean))
         {
@@ -421,7 +421,7 @@ z_stream_ctrl_method(ZStream *s, guint function, gpointer value, guint vlen)
           res = TRUE;
         }
       break;
-      
+
     case ZST_CTRL_SET_COND_WRITE:
       if (vlen == sizeof(gboolean))
         {
@@ -429,7 +429,7 @@ z_stream_ctrl_method(ZStream *s, guint function, gpointer value, guint vlen)
           res = TRUE;
         }
       break;
-      
+
     case ZST_CTRL_GET_COND_PRI:
       if (vlen == sizeof(gboolean))
         {
@@ -437,7 +437,7 @@ z_stream_ctrl_method(ZStream *s, guint function, gpointer value, guint vlen)
           res = TRUE;
         }
       break;
-      
+
     case ZST_CTRL_SET_COND_PRI:
       if (vlen == sizeof(gboolean))
         {
@@ -445,7 +445,7 @@ z_stream_ctrl_method(ZStream *s, guint function, gpointer value, guint vlen)
           res = TRUE;
         }
       break;
-      
+
     case ZST_CTRL_GET_CALLBACK_READ:
       if (vlen == sizeof(ZStreamSetCb))
         {
@@ -456,12 +456,12 @@ z_stream_ctrl_method(ZStream *s, guint function, gpointer value, guint vlen)
           res = TRUE;
         }
       break;
-      
+
     case ZST_CTRL_SET_CALLBACK_READ:
       if (vlen == sizeof(ZStreamSetCb))
         {
           ZStreamSetCb *cbv = (ZStreamSetCb *)value;
-          
+
           if (s->user_data_read_notify)
             s->user_data_read_notify(s->user_data_read);
           s->read_cb = cbv->cb;
@@ -470,7 +470,7 @@ z_stream_ctrl_method(ZStream *s, guint function, gpointer value, guint vlen)
           res = TRUE;
         }
       break;
-      
+
     case ZST_CTRL_GET_CALLBACK_WRITE:
       if (vlen == sizeof(ZStreamSetCb))
         {
@@ -481,12 +481,12 @@ z_stream_ctrl_method(ZStream *s, guint function, gpointer value, guint vlen)
           res = TRUE;
         }
       break;
-      
+
     case ZST_CTRL_SET_CALLBACK_WRITE:
       if (vlen == sizeof(ZStreamSetCb))
         {
           ZStreamSetCb *cbv = (ZStreamSetCb *)value;
-          
+
           if (s->user_data_write_notify)
             s->user_data_write_notify(s->user_data_write);
           s->write_cb = cbv->cb;
@@ -495,7 +495,7 @@ z_stream_ctrl_method(ZStream *s, guint function, gpointer value, guint vlen)
           res = TRUE;
         }
       break;
-      
+
     case ZST_CTRL_GET_CALLBACK_PRI:
       if (vlen == sizeof(ZStreamSetCb))
         {
@@ -506,12 +506,12 @@ z_stream_ctrl_method(ZStream *s, guint function, gpointer value, guint vlen)
           res = TRUE;
         }
       break;
-      
+
     case ZST_CTRL_SET_CALLBACK_PRI:
       if (vlen == sizeof(ZStreamSetCb))
         {
           ZStreamSetCb *cbv = (ZStreamSetCb *)value;
-          
+
           if (s->user_data_pri_notify)
             s->user_data_pri_notify(s->user_data_pri);
           s->pri_cb = cbv->cb;
@@ -520,7 +520,7 @@ z_stream_ctrl_method(ZStream *s, guint function, gpointer value, guint vlen)
           res = TRUE;
         }
       break;
-      
+
     case ZST_CTRL_SET_TIMEOUT_BLOCK:
       if (vlen == sizeof(gint))
         {
@@ -540,7 +540,7 @@ z_stream_ctrl_method(ZStream *s, guint function, gpointer value, guint vlen)
 
   if (res && (function & ZST_CTRL_MSG_FORWARD) && s->child)
     res = z_stream_ctrl(s->child, function, value, vlen);
-  
+
   z_return(res);
 }
 
@@ -588,11 +588,11 @@ z_stream_set_cond(ZStream *s, guint type, gboolean value)
     case G_IO_IN:
       ret = z_stream_ctrl(s, ZST_CTRL_SET_COND_READ, &value, sizeof(value));
       break;
-      
+
     case G_IO_OUT:
       ret = z_stream_ctrl(s, ZST_CTRL_SET_COND_WRITE, &value, sizeof(value));
       break;
-      
+
     case G_IO_PRI:
       ret = z_stream_ctrl(s, ZST_CTRL_SET_COND_PRI, &value, sizeof(value));
       break;
@@ -753,7 +753,7 @@ z_stream_set_child_method(ZStream *self, ZStream *new_child)
   if (self->child)
     {
       ZStream *parent, *child;
-      
+
       g_assert(self->child->parent == self);
       /* recalculate umbrella state */
       self->child->umbrella_state = self->child->umbrella_flags;
@@ -769,9 +769,9 @@ z_stream_set_child_method(ZStream *self, ZStream *new_child)
       child = self->child;
       self->child->parent = NULL;
       self->child = NULL;
-      
+
       z_stream_struct_unref(child);
-      
+
       z_stream_unref(child);
       z_stream_unref(parent);
     }
@@ -779,7 +779,7 @@ z_stream_set_child_method(ZStream *self, ZStream *new_child)
   if (new_child)
     {
       g_assert(new_child->parent == NULL);
-      
+
       self->stack_depth = new_child->stack_depth + 1;
       z_stream_set_name(self, new_child->name);
       new_child->parent = z_stream_ref(self);
@@ -788,7 +788,7 @@ z_stream_set_child_method(ZStream *self, ZStream *new_child)
       self->timeout = new_child->timeout;
       for (p = self; p && p->child; p = p->child)
         p->child->umbrella_state &= ~self->umbrella_flags;
-    }  
+    }
 }
 
 /**
@@ -800,7 +800,7 @@ z_stream_set_child_method(ZStream *self, ZStream *new_child)
  * This function can be used to save the complete ZStream callback state. It
  * is usually needed when this stream is to be used in a completely
  * different context (e.g. ZTransfer vs. ZProxy). The function saves the
- * references to user_data associated with different callbacks, e.g. 
+ * references to user_data associated with different callbacks, e.g.
  * GDestroyNotify callbacks are called when the context is freed without
  * restoring it. The function also NULLs all fields in ZStream to make it
  * sure the ZStream will not do the same.
@@ -811,24 +811,24 @@ gboolean
 z_stream_save_context(ZStream *self, ZStreamContext *context)
 {
   gsize extra_size;
-  
+
   z_enter();
   context->restored = FALSE;
   context->want_read = self->want_read;
   context->user_data_read = self->user_data_read;
   context->user_data_read_notify = self->user_data_read_notify;
   context->read_cb = self->read_cb;
-         
+
   context->want_pri = self->want_pri;
   context->user_data_pri = self->user_data_pri;
   context->user_data_pri_notify = self->user_data_pri_notify;
   context->pri_cb = self->pri_cb;
-  
+
   context->want_write = self->want_write;
   context->user_data_write = self->user_data_write;
   context->user_data_write_notify = self->user_data_write_notify;
   context->write_cb = self->write_cb;
-  
+
   context->timeout = self->timeout;
   context->nonblocking = z_stream_get_nonblock(self);
 
@@ -836,17 +836,17 @@ z_stream_save_context(ZStream *self, ZStreamContext *context)
   self->user_data_read = NULL;
   self->user_data_read_notify = NULL;
   self->read_cb = NULL;
-         
+
   self->want_pri = FALSE;
   self->user_data_pri = NULL;
   self->user_data_pri_notify = NULL;
   self->pri_cb = NULL;
-  
+
   self->want_write = FALSE;
   self->user_data_write = NULL;
   self->user_data_write_notify = NULL;
   self->write_cb = NULL;
-  
+
   extra_size = z_stream_extra_get_size(self);
   context->stream_extra = g_malloc0(extra_size);
   z_stream_extra_save(self, context->stream_extra);
@@ -868,29 +868,29 @@ gboolean
 z_stream_restore_context(ZStream *self, ZStreamContext *context)
 {
   z_enter();
-  
+
   g_return_val_if_fail(!context->restored, FALSE);
 
   z_stream_drop_callbacks(self);
-  
+
   self->want_read = context->want_read;
   self->user_data_read = context->user_data_read;
   self->user_data_read_notify = context->user_data_read_notify;
   self->read_cb = context->read_cb;
-         
+
   self->want_pri = context->want_pri;
   self->user_data_pri = context->user_data_pri;
   self->user_data_pri_notify = context->user_data_pri_notify;
   self->pri_cb = context->pri_cb;
-  
+
   self->want_write = context->want_write;
   self->user_data_write = context->user_data_write;
   self->user_data_write_notify = context->user_data_write_notify;
   self->write_cb = context->write_cb;
-  
+
   self->timeout = context->timeout;
   z_stream_set_nonblock(self, context->nonblocking);
-  
+
   if (context->stream_extra)
     {
       z_stream_extra_restore(self, context->stream_extra);
@@ -901,7 +901,6 @@ z_stream_restore_context(ZStream *self, ZStreamContext *context)
   context->restored = TRUE;
   z_return(TRUE);
 }
-
 
 /**
  * This function searches the stream stack for a specific stream type.
@@ -922,7 +921,7 @@ z_stream_search_stack(ZStream *self, gint direction, ZClass *class)
     {
       if (z_object_is_instance(&p->super, class))
         z_return(p);
-        
+
       if ((p->umbrella_flags & direction) == direction)
         break; /* this direction is shadowed by the current entry */
     }
@@ -955,7 +954,7 @@ z_stream_search_stack(ZStream *self, gint direction, ZClass *class)
  *   The end result is a single reference to the stream stack in the
  *   variable 'stream' and single references to all nested streams in the
  *   stream stack. Popping streams one by one can be done using:
- * 
+ *
  *     stream = z_stream_pop(stream);  // pops ZStreamSsl from the top
  *     stream = z_stream_pop(stream);  // pops ZStreamLine from the top
  *     stream = z_stream_pop(stream);  // fails and returns NULL, not freeing anything
@@ -977,18 +976,18 @@ z_stream_push(ZStream *self, ZStream *new_top)
  * it goes. See the example at z_stream_push to see how references should
  * be treated.
  *
- * @returns the new top of the stack 
+ * @returns the new top of the stack
  **/
 ZStream *
 z_stream_pop(ZStream *self)
 {
   ZStream *new_top = z_stream_ref(self->child);
-  
+
   if (new_top)
     {
       self->umbrella_state = self->umbrella_flags;
       z_stream_set_child(self, NULL);
-      
+
       new_top->umbrella_state = new_top->umbrella_flags;
       z_stream_unref(self);
     }
@@ -1010,21 +1009,20 @@ z_stream_attach_source_method(ZStream *self, GMainContext *context)
 {
   z_enter();
   g_assert(self->source == NULL);
-  
+
   z_stream_ref(self);
   /* NOTE: we need the structure referenced as long as the source is active */
   z_stream_struct_ref(self);
   if (self->child)
     z_stream_attach_source(self->child, context);
-  
+
   self->source = z_stream_source_new(self);
   g_source_set_priority(self->source, G_PRIORITY_DEFAULT - self->stack_depth);
   g_source_attach(self->source, context);
-  
+
   z_stream_unref(self);
   z_return();
 }
-
 
 /**
  * This function is called when the stream is detached from a poll loop.
@@ -1043,10 +1041,10 @@ z_stream_detach_source_method(ZStream *self)
   if (self->source)
     {
       GSource *source = NULL;
-    
+
       source = self->source;
       self->source = NULL;
-      
+
       g_source_destroy(source);
       g_source_unref(source);
       detached = TRUE;
@@ -1058,7 +1056,7 @@ z_stream_detach_source_method(ZStream *self)
 
   if (detached)
     z_stream_struct_unref(self);
-    
+
   z_return();
 }
 
@@ -1076,7 +1074,7 @@ z_stream_detach_source_method(ZStream *self)
  *
  * @returns GLib I/O status
  **/
-GIOStatus 
+GIOStatus
 z_stream_read(ZStream *self, void *buf, gsize count, gsize *bytes_read, GError **err)
 {
   GIOStatus res;
@@ -1084,12 +1082,12 @@ z_stream_read(ZStream *self, void *buf, gsize count, gsize *bytes_read, GError *
   z_enter();
 
   g_return_val_if_fail((err == NULL) || (*err == NULL), G_IO_STATUS_ERROR);
-  
+
   if (self->ungot_bufs)
     {
       GList *l;
       ZPktBuf *pack;
-      
+
       l = self->ungot_bufs;
       pack = (ZPktBuf *) l->data;
 
@@ -1113,14 +1111,14 @@ z_stream_read(ZStream *self, void *buf, gsize count, gsize *bytes_read, GError *
           pack->data = g_realloc(pack->data, pack->length - count);
           pack->length = pack->length - count;
         }
-      
+
       res = G_IO_STATUS_NORMAL;
     }
   else
     {
       res = Z_FUNCS(self, ZStream)->read(self, buf, count, bytes_read, &local_error);
     }
-  
+
   if (res == G_IO_STATUS_ERROR)
     {
       /*LOG
@@ -1134,10 +1132,10 @@ z_stream_read(ZStream *self, void *buf, gsize count, gsize *bytes_read, GError *
       self->bytes_recvd += *bytes_read;
       z_stream_data_dump(self, G_IO_IN, buf, *bytes_read);
     }
-  
+
   if (local_error)
     g_propagate_error(err, local_error);
-  
+
   z_leave();
   return res;
 }
@@ -1153,16 +1151,16 @@ z_stream_read(ZStream *self, void *buf, gsize count, gsize *bytes_read, GError *
  *
  * @returns GLib I/O status
  **/
-GIOStatus 
+GIOStatus
 z_stream_write(ZStream *self, const void *buf, gsize count, gsize *bytes_written, GError **err)
 {
   GIOStatus res;
   GError *local_error = NULL;
 
   g_return_val_if_fail((err == NULL) || (*err == NULL), G_IO_STATUS_ERROR);
-  
+
   res = Z_FUNCS(self, ZStream)->write(self, buf, count, bytes_written, &local_error);
-  
+
   if (res == G_IO_STATUS_ERROR)
     {
       /*LOG
@@ -1170,7 +1168,7 @@ z_stream_write(ZStream *self, const void *buf, gsize count, gsize *bytes_written
         the write() system call.
        */
       z_log(self->name, CORE_ERROR, 1, "Stream write failed; stream='%s', reason='%s'", self->super.isa->name, local_error ? local_error->message : "unknown");
-      
+
     }
   else if (res == G_IO_STATUS_NORMAL)
     {
@@ -1178,7 +1176,7 @@ z_stream_write(ZStream *self, const void *buf, gsize count, gsize *bytes_written
       z_stream_data_dump(self, G_IO_OUT, buf, *bytes_written);
     }
 
-  if (local_error)  
+  if (local_error)
     g_propagate_error(err, local_error);
   return res;
 }
@@ -1199,9 +1197,9 @@ static GIOStatus
 z_stream_close_method(ZStream *self, GError **error)
 {
   GIOStatus res;
-  
+
   g_return_val_if_fail ((error == NULL) || (*error == NULL), G_IO_STATUS_ERROR);
-  
+
   /*LOG
     This message indicates that the given stream is to be closed.
    */
@@ -1299,7 +1297,7 @@ z_stream_write_chunk(ZStream *self, const void *buf, gsize len, gsize *bytes_wri
 {
   GIOStatus status = G_IO_STATUS_NORMAL;
   gsize bytes;
-  
+
   z_enter();
   *bytes_written = 0;
   while (status == G_IO_STATUS_NORMAL && len > 0)
@@ -1363,7 +1361,7 @@ z_stream_unget(ZStream *self, const void *buf, gsize count, GError **error)
   ZPktBuf *pack;
 
   g_return_val_if_fail((error == NULL) || (*error == NULL), FALSE);
-  
+
   pack = z_pktbuf_new();
   z_pktbuf_copy(pack, buf, count);
   if (!z_stream_unget_packet(self, pack, error))
@@ -1429,19 +1427,19 @@ z_stream_free_method(ZObject *s)
   time_t time_close;
 
   z_enter();
-  
+
   g_assert(self->child == NULL);
-  
+
   while (self->ungot_bufs)
     {
       GList *l;
-      
+
       l = self->ungot_bufs;
       z_pktbuf_unref((ZPktBuf *) l->data);
       self->ungot_bufs = g_list_remove_link(self->ungot_bufs, self->ungot_bufs);
       g_list_free_1(l);
     }
-  
+
   time_close = time(NULL);
 
   /*LOG
@@ -1479,6 +1477,19 @@ z_stream_set_keepalive(ZStream *self, gint keepalive)
     {
       z_fd_set_keepalive(fd, keepalive);
       z_stream_ctrl(self, ZST_CTRL_SET_KEEPALIVE, &keepalive, sizeof(keepalive));
+    }
+}
+
+void
+z_stream_set_tcp_nodelay(ZStream *self, gint tcp_nodelay)
+{
+  gint fd = z_stream_get_fd(self);
+
+  tcp_nodelay = !!tcp_nodelay;
+  if (fd != -1)
+    {
+      z_fd_set_tcp_nodelay(fd, tcp_nodelay);
+      z_stream_ctrl(self, ZST_CTRL_SET_TCP_NODELAY, &tcp_nodelay, sizeof(tcp_nodelay));
     }
 }
 

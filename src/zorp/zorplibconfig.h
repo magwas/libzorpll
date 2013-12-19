@@ -1,5 +1,5 @@
 /* src/zorp/zorplibconfig.h.  Generated from zorplibconfig.h.in by configure.  */
-/* src/zorp/zorplibconfig.h.in.  Generated from configure.in by autoheader.  */
+/* src/zorp/zorplibconfig.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Define to one of `_getb67', `GETB67', `getb67' for Cray-2 and Cray-YMP
    systems. This function is required for `alloca.c' support on those systems.
@@ -203,13 +203,13 @@
 #define ZORPLIBLL_PACKAGE "libzorpll"
 
 /* Zorp low level library, source revision */
-#define ZORPLIBLL_REVISION "ssh+git://coroner@git.balabit//var/scm/git/zorp/libzorpll--mainline--4.0#master#6e24c9aa806b8ebce122e661aa3ed95744199291"
+#define ZORPLIBLL_REVISION "ssh+git://mag@git.balabit/var/scm/git/zorp/libzorpll--mainline--5.0#packaging#67942acdeb9b8175f03dafd5415b8060f591dd67"
 
 /* Zorp low level library version */
-#define ZORPLIBLL_VERSION "3.9.1.0"
+#define ZORPLIBLL_VERSION "5.0.0.0"
 
 /* Binary compatibility version */
-#define ZORPLIB_COMPAT_BRANCH "3.9-1"
+#define ZORPLIB_COMPAT_BRANCH "5.0-0"
 
 /* enable caps */
 #define ZORPLIB_ENABLE_CAPS 1
@@ -219,9 +219,6 @@
 
 /* enable memtrace */
 #define ZORPLIB_ENABLE_MEM_TRACE 0
-
-/* enable residual protection */
-#define ZORPLIB_ENABLE_RESIDUAL_PROTECTION 0
 
 /* enable ssl engine */
 #define ZORPLIB_ENABLE_SSL_ENGINE 0
@@ -243,6 +240,11 @@
 
 /* default temporary directory */
 #define ZORPLIB_TEMP_DIR "NONE/var/lib/zorp/tmp"
+
+/* Enable large inode numbers on Mac OS X 10.5.  */
+#ifndef _DARWIN_USE_64_BIT_INODE
+# define _DARWIN_USE_64_BIT_INODE 1
+#endif
 
 /* Number of bits in a file offset, on hosts where this is settable. */
 /* #undef _FILE_OFFSET_BITS */

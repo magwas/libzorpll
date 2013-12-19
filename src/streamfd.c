@@ -16,7 +16,6 @@
 
 #include <zorp/streamfd.h>
 
-
 #include <zorp/log.h>
 #include <zorp/error.h>
 
@@ -45,6 +44,7 @@ typedef struct _ZStreamFD
   GIOChannel *channel;
   gint fd;
   gint keepalive;
+  gint tcp_nodelay;
   gboolean shutdown;
   GPollFD pollfd;
 #ifdef G_OS_WIN32
@@ -63,13 +63,12 @@ typedef struct _ZStreamFDExtra
   gboolean nonblock;
 } ZStreamFDExtra;
 
-
 static gboolean
 z_stream_fd_watch_prepare(ZStream *s, GSource *src G_GNUC_UNUSED, gint *timeout)
 {
   ZStreamFD *mystream = (ZStreamFD *) s;
   GPollFD *mypollfd = &mystream->pollfd;
-  
+
 #ifdef G_OS_WIN32
   fd_set xf,wf;
   struct timeval to;
@@ -135,10 +134,10 @@ z_stream_fd_watch_prepare(ZStream *s, GSource *src G_GNUC_UNUSED, gint *timeout)
 
   if (mystream->super.want_read)
     mypollfd->events |= G_IO_IN;
-  
+
   if (mystream->super.want_write)
     mypollfd->events |= G_IO_OUT;
-  
+
   if (mystream->super.want_pri)
     mypollfd->events |= G_IO_PRI;
 
@@ -161,7 +160,7 @@ z_stream_fd_watch_check(ZStream *s, GSource *src G_GNUC_UNUSED)
   ZStreamFD *mystream = (ZStreamFD *) s;
   GPollFD *mypollfd = &mystream->pollfd;
   GIOCondition poll_condition;
-  
+
 #ifdef G_OS_WIN32
   WSANETWORKEVENTS evs;
 #endif
@@ -172,10 +171,10 @@ z_stream_fd_watch_check(ZStream *s, GSource *src G_GNUC_UNUSED)
     z_return(TRUE);
 
 #ifdef G_OS_WIN32
-  WSAEnumNetworkEvents(mystream->fd, mypollfd->fd, &evs); //(HANDLE) 
+  WSAEnumNetworkEvents(mystream->fd, mypollfd->fd, &evs); //(HANDLE)
   mypollfd->revents = 0;
 
-  if (mystream->can_write) 
+  if (mystream->can_write)
     mypollfd->revents |= G_IO_OUT;
   if (evs.lNetworkEvents & FD_WRITE)
     {
@@ -214,7 +213,7 @@ z_stream_fd_watch_dispatch(ZStream *s, GSource *src)
   GPollFD *mypollfd = &mystream->pollfd;
   GIOCondition poll_cond = mypollfd->revents;
   gboolean rc = TRUE;
-  
+
   z_enter();
 #ifdef G_OS_WIN32
   z_trace(NULL, "WinSock: Dispatching events %o for fd %d at %s line %d", mypollfd->revents, mypollfd->fd, __FILE__, __LINE__);
@@ -260,7 +259,7 @@ z_stream_fd_watch_dispatch(ZStream *s, GSource *src)
           z_log(mystream->super.name, CORE_ERROR, 3, "Internal error, no read callback is set;");
         }
     }
-  
+
   if (mystream->super.want_write && (poll_cond & G_IO_OUT) && rc)
     {
       if (mystream->super.write_cb)
@@ -276,7 +275,7 @@ z_stream_fd_watch_dispatch(ZStream *s, GSource *src)
           z_log(mystream->super.name, CORE_ERROR, 3, "Internal error, no write callback is set;");
         }
     }
-  
+
   if (mystream->super.want_pri && (poll_cond & G_IO_PRI) && rc)
     {
       if (mystream->super.pri_cb)
@@ -294,7 +293,6 @@ z_stream_fd_watch_dispatch(ZStream *s, GSource *src)
     }
   z_return(rc);
 }
-
 
 /**
  * Wait for the fd encapsulated by self.
@@ -347,7 +345,7 @@ z_stream_wait_fd(ZStreamFD *self, guint cond, gint timeout)
   if (cond & G_IO_IN)
     {
       u_long bytes;
-  
+
       ioctlsocket(self->fd, FIONREAD, &bytes);
       if (bytes > 0)
         z_return(TRUE);
@@ -408,7 +406,7 @@ z_stream_fd_read_method(ZStream *stream,
   GError *local_error = NULL;
 
   z_enter();
-  
+
   g_return_val_if_fail ((error == NULL) || (*error == NULL), G_IO_STATUS_ERROR);
 
   if (!z_stream_wait_fd(self, G_IO_IN | G_IO_HUP, self->super.timeout))
@@ -423,7 +421,7 @@ z_stream_fd_read_method(ZStream *stream,
   if (!(self->super.umbrella_state & G_IO_IN))
     {
       /* low-level logging if we're not the toplevel stream */
-      
+
       if (res == G_IO_STATUS_NORMAL)
         {
           /*LOG
@@ -475,7 +473,7 @@ z_stream_fd_write_method(ZStream *stream,
       g_set_error(error, G_IO_CHANNEL_ERROR, G_IO_CHANNEL_ERROR_FAILED, "Channel already shut down");
       z_return(G_IO_STATUS_ERROR);
     }
-  
+
   if (!z_stream_wait_fd(self, G_IO_OUT | G_IO_HUP, self->super.timeout))
     {
       g_set_error(error, G_IO_CHANNEL_ERROR, G_IO_CHANNEL_ERROR_FAILED, "Channel write timed out");
@@ -486,7 +484,7 @@ z_stream_fd_write_method(ZStream *stream,
   if (!(self->super.umbrella_state & G_IO_OUT))
     {
       /* low-level logging if we're not the toplevel stream */
-      
+
       if (res != G_IO_STATUS_AGAIN)
         {
           /*LOG
@@ -521,7 +519,7 @@ z_stream_fd_write_pri_method(ZStream *stream,
   int res, attempt = 1;
 
   z_enter();
-  g_return_val_if_fail ((error == NULL) || (*error == NULL), G_IO_STATUS_ERROR);  
+  g_return_val_if_fail ((error == NULL) || (*error == NULL), G_IO_STATUS_ERROR);
 
   if (self->shutdown)
     {
@@ -596,16 +594,16 @@ z_stream_fd_shutdown_method(ZStream *stream, int i, GError **error)
 {
   ZStreamFD *self = (ZStreamFD *) stream;
   int res, attempt = 1;
-  
+
   z_enter();
-  g_return_val_if_fail ((error == NULL) || (*error == NULL), G_IO_STATUS_ERROR);  
+  g_return_val_if_fail ((error == NULL) || (*error == NULL), G_IO_STATUS_ERROR);
 
   /*LOG
     This debug message indicates that shutdown is to be initiated on
     the given fd.
    */
   z_log(self->super.name, CORE_DEBUG, 6, "Shutdown channel; fd='%d', mode='%d'", self->fd, i);
-  
+
   do
     {
       res = shutdown(self->fd, i);
@@ -622,7 +620,7 @@ z_stream_fd_shutdown_method(ZStream *stream, int i, GError **error)
         }
     }
   while (res == -1 && z_errno_is(EINTR));
-  
+
   if (res != 0)
     {
       g_set_error (error, G_IO_CHANNEL_ERROR,
@@ -669,7 +667,7 @@ static gboolean
 z_stream_fd_ctrl_method(ZStream *s, guint function, gpointer value, guint vlen)
 {
   ZStreamFD *self = Z_CAST(s, ZStreamFD);
-  
+
   z_enter();
   switch (ZST_CTRL_MSG(function))
     {
@@ -687,7 +685,7 @@ z_stream_fd_ctrl_method(ZStream *s, guint function, gpointer value, guint vlen)
             res = fcntl(fd, F_SETFD, ~FD_CLOEXEC);
 #else
           res = 0;
-#endif    
+#endif
           if (res >= 0)
             z_return(TRUE);
 
@@ -724,7 +722,7 @@ z_stream_fd_ctrl_method(ZStream *s, guint function, gpointer value, guint vlen)
 #else
           z_fd_set_nonblock(self->fd, nonblock);
           ret = G_IO_STATUS_NORMAL;
-#endif          
+#endif
           if (ret == G_IO_STATUS_NORMAL)
             z_return(TRUE);
 
@@ -797,7 +795,7 @@ z_stream_fd_ctrl_method(ZStream *s, guint function, gpointer value, guint vlen)
 #else
       z_log(NULL, CORE_ERROR, 4, "Internal error, this feature is not supported on Win32;");
       z_return(FALSE);
-#endif          
+#endif
       break;
 
     case ZST_CTRL_GET_KEEPALIVE:
@@ -832,6 +830,38 @@ z_stream_fd_ctrl_method(ZStream *s, guint function, gpointer value, guint vlen)
         z_log(NULL, CORE_ERROR, 4, "Internal error, bad parameter is given for setting the KEEPALIVE option; size='%d'", vlen);
       break;
 
+    case ZST_CTRL_GET_TCP_NODELAY:
+      if (vlen == sizeof(gint))
+        {
+          *((gint *)value) = self->tcp_nodelay;
+          z_leave();
+          return TRUE;
+        }
+      else
+        /*LOG
+          This message indicates that an internal error occurred, during getting the FD of a stream,
+          because the size of the parameter is wrong. Please report this event to the Balabit QA
+          Team (devel@balabit.com).
+          */
+        z_log(NULL, CORE_ERROR, 4, "Internal error, bad parameter is given for getting the KEEPALIVE option; size='%d'", vlen);
+      break;
+
+    case ZST_CTRL_SET_TCP_NODELAY:
+      if (vlen == sizeof(gint))
+        {
+          self->tcp_nodelay = *((gint *)value);
+          z_leave();
+          return TRUE;
+        }
+      else
+        /*LOG
+          This message indicates that an internal error occurred, during getting the FD of a stream,
+          because the size of the parameter is wrong. Please report this event to the Balabit QA
+          Team (devel@balabit.com).
+          */
+        z_log(NULL, CORE_ERROR, 4, "Internal error, bad parameter is given for setting the KEEPALIVE option; size='%d'", vlen);
+      break;
+
     default:
       if (z_stream_ctrl_method(s, function, value, vlen))
         z_return(TRUE);
@@ -850,7 +880,7 @@ z_stream_fd_attach_source_method(ZStream *s, GMainContext *context)
 {
   ZStreamFD *self = (ZStreamFD *) s;
   z_enter();
-  
+
   Z_SUPER(self, ZStream)->attach_source(s, context);
 #ifdef G_OS_WIN32
   self->pollfd.fd = self->winsock_event;
@@ -873,9 +903,9 @@ z_stream_fd_extra_save_method(ZStream *s, gpointer extra)
 {
   ZStreamFDExtra *fd_extra;
   gsize ofs;
-  
+
   ofs = Z_SUPER(s, ZStream)->extra_save(s, extra);
-  
+
   fd_extra = (ZStreamFDExtra *) (((gchar *) extra) + ofs);
   fd_extra->nonblock = z_stream_get_nonblock(s);
   return ofs + sizeof(ZStreamFDExtra);
@@ -886,15 +916,13 @@ z_stream_fd_extra_restore_method(ZStream *s, gpointer extra)
 {
   ZStreamFDExtra *fd_extra;
   gsize ofs;
-  
+
   ofs = Z_SUPER(s, ZStream)->extra_restore(s, extra);
-  
+
   fd_extra = (ZStreamFDExtra *) (((gchar *) extra) + ofs);
   z_stream_set_nonblock(s, fd_extra->nonblock);
   return ofs + sizeof(ZStreamFDExtra);
 }
-
-
 
 /**
  * Allocate and initialize a ZStreamFD instance with the given fd and name.
@@ -933,20 +961,19 @@ z_stream_fd_free_method(ZObject *s)
   ZStreamFD *self = Z_CAST(s, ZStreamFD);
 
   z_enter();
-#ifdef G_OS_WIN32 
-  z_trace(NULL, "WinSock: Event #%d destroyed at %s line %d", self->winsock_event, __FILE__, __LINE__); 
-  WSACloseEvent(self->winsock_event); 
-#endif   
+#ifdef G_OS_WIN32
+  z_trace(NULL, "WinSock: Event #%d destroyed at %s line %d", self->winsock_event, __FILE__, __LINE__);
+  WSACloseEvent(self->winsock_event);
+#endif
   g_io_channel_unref(self->channel);
   z_stream_free_method(s);
   z_return();
 }
 
-
 /**
  * ZStreamFD virtual methods.
  **/
-static ZStreamFuncs 
+static ZStreamFuncs
 z_stream_fd_funcs =
 {
   {
@@ -967,7 +994,7 @@ z_stream_fd_funcs =
   z_stream_fd_watch_check,
   z_stream_fd_watch_dispatch,
   NULL, /* watch_finalize */
-  
+
   z_stream_fd_extra_get_size_method,
   z_stream_fd_extra_save_method,
   z_stream_fd_extra_restore_method,

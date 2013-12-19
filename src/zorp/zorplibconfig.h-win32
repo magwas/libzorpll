@@ -1,7 +1,5 @@
 /* src/zorp/zorplibconfig.h-win32  */
 
-#define ZORPLIB_ENABLE_RESIDUAL_PROTECTION 0
-
 #define ZORPLIB_ENABLE_CAPS 0
 
 #define ZORPLIB_ENABLE_MEM_TRACE 0
@@ -18,6 +16,6 @@
 #define ZORPLIBLL_PACKAGE "libzorpll"
 
 /* Zorp low level library version  */
-#define ZORPLIBLL_VERSION "3.9.1.0"
+#define ZORPLIBLL_VERSION "5.0.0.0"
 
-#define ZORPLIBLL_REVISION "ssh+git://coroner@git.balabit//var/scm/git/zorp/libzorpll--mainline--4.0#master#6e24c9aa806b8ebce122e661aa3ed95744199291"
+#define ZORPLIBLL_REVISION "ssh+git://mag@git.balabit/var/scm/git/zorp/libzorpll--mainline--5.0#packaging#67942acdeb9b8175f03dafd5415b8060f591dd67"

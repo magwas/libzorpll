@@ -939,7 +939,7 @@ z_llog(const gchar *class, int level, const gchar *format, ...)
  *
  * @see z_log() in log.h
  **/
-void 
+void
 z_log(const gchar *session_id, const gchar *class, int level, const gchar *format, ...)
 {
   va_list l;

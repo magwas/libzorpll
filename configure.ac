@@ -38,7 +38,7 @@ esac
 if test -r $srcdir/dist.conf; then
 	# read defaults, dist.conf does not change
 	# values for parameters that are already set
-	source $srcdir/dist.conf
+	. $srcdir/dist.conf
 fi
 
 
@@ -71,10 +71,6 @@ AC_ARG_ENABLE(trace,
               [  --enable-trace       Enable trace information & messages (default: no)],,
               enable_trace=no)
 
-AC_ARG_ENABLE(werror,
-              [  --enable-werror      When enabled, treat compiler warnings as errors (default: yes)],,
-              enable_werror=yes)
-
 AC_ARG_ENABLE(mem-trace,
               [  --enable-mem-trace   Enable memory trace (default: no)],,
               enable_mem_trace=no)
@@ -102,10 +98,6 @@ if test "x$enable_debug" = "xyes"; then
   CFLAGS="$CFLAGS -O0"
 else
   CFLAGS="$CFLAGS -O2"
-fi
-
-if test "x$enable_werror" = "xyes"; then
-  CFLAGS="$CFLAGS -Werror"
 fi
 
 dnl Checks for programs.
@@ -317,7 +309,7 @@ VERSION_COMPAT=`echo $VERSION_NOSNAPSHOT |  cut -d '.' -f 3`
 VERSION_AGE=`echo $VERSION_NOSNAPSHOT |  cut -d '.' -f 4`
 
 LIBZORPLL_LT_RELEASE="$VERSION_MAJOR.$VERSION_MINOR"
-LIBZORPLL_LT_CURRENT=$@<:@ $VERSION_COMPAT + $VERSION_AGE @:>@
+LIBZORPLL_LT_CURRENT=$(( $VERSION_COMPAT + $VERSION_AGE ))
 LIBZORPLL_LT_COMPAT_BRANCH="$VERSION_MAJOR.$VERSION_MINOR-$VERSION_COMPAT"
 LIBZORPLL_LT_COMPAT_PL="$VERSION_COMPAT"
 LIBZORPLL_LT_AGE="$VERSION_AGE"

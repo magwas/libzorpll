@@ -162,17 +162,13 @@ z_thread_func(gpointer st)
   do
     {
       z_thread_func_core(self, NULL);
-      self = NULL;
-      g_async_queue_lock(queue);
-      self = (ZThread *) g_async_queue_try_pop_unlocked(queue);
+
+      self = (ZThread *) g_async_queue_try_pop(queue);
       if (!self)
         {
           num_threads--;
           g_async_queue_unref(queue);
-          g_async_queue_unlock(queue);
         }
-      else
-        g_async_queue_unlock(queue);
     }
   while (self != NULL);
 
