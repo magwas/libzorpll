@@ -25,7 +25,7 @@ MEMTRACEDEST=$(TARGETDIR)/usr/lib/debug
 DBGDEST=$(TARGETDIR)/usr/lib/debug/usr/lib
 
 %:
-	dh $@  --with autotools-dev --dbg-package=libzorpll-5.0-0-dbg 
+	dh $@  --with autotools-dev --dbg-package=libzorpll-5.0-0-dbg
 
 override_dh_auto_configure:
 	autoreconf -i

@@ -6,7 +6,7 @@ libzorpll (5.0.0.0ubuntu2) quantal; urgency=low
 
 libzorpll (5.0.0.0ubuntu1) quantal; urgency=low
 
-  * build fix 
+  * build fix
 
  -- Árpád Magosányi <mag@balabit.hu>  Thu, 19 Dec 2013 18:32:42 +0100
 

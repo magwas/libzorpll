@@ -4,7 +4,7 @@
 
 CONFFILE=NONE/etc/libzorpll.conf
 
-case "$1" in 
+case "$1" in
     configure|reconfigure)
         if [ -f /etc/zorpos_version ]; then
             EMAIL=""
