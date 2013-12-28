@@ -28,6 +28,7 @@ DBGDEST=$(TARGETDIR)/usr/lib/debug/usr/lib
 	dh $@  --with autotools-dev --dbg-package=libzorpll-5.0-0-dbg
 
 override_dh_auto_configure:
+	mkdir -p m4
 	autoreconf -i
 	dh_auto_configure -- --enable-debug --enable-trace
 
