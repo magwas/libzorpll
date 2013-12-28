@@ -85,7 +85,7 @@ AC_ARG_ENABLE(stackdump,
 
 AC_ARG_ENABLE(ssl-engine,
               [  --enable-ssl-engine   Enable OpenSSL engine support (default: auto)],,
-              enable_ssl_engine=auto)
+              enable_ssl_engine=yes)
 
 AC_ARG_ENABLE(tos,
               [  --enable-tos          Enable ToS manipulation routines (default: auto)],,
