@@ -1,5 +1,4 @@
-SUBDIRS = src debian tests scripts
-SUBDIRS += winbuild tgz2build
+SUBDIRS = src tests scripts
 ACLOCAL_AMFLAGS= -I m4
 
 pkgconfigdir = $(libdir)/pkgconfig
