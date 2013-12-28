@@ -43,7 +43,7 @@ typedef struct _ZListener
   ZAcceptFunc callback;
   gpointer user_data;
   guint32 sock_flags;
-  GStaticRecMutex lock;
+  GRecMutex lock;
   GMainContext *context;
   gchar *session_id;
 } ZListener;

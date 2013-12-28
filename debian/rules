@@ -1,0 +1,54 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Sample debian/rules that uses debhelper.
+#
+# This file was originally written by Joey Hess and Craig Small.
+# As a special exception, when this file is copied by dh-make into a
+# dh-make output file, you may use that output file without restriction.
+# This special exception was added by Craig Small in version 0.37 of dh-make.
+#
+# Modified to make a template file for a multi-binary package with separated
+# build-arch and build-indep targets  by Bill Allombert 2001
+
+# Uncomment this to turn on verbose mode.
+export DH_VERBOSE=1
+
+# This has to be exported to make some magic below work.
+export DH_OPTIONS
+
+DEBDIR=`pwd`/debian
+MEMTRACEDIR=$(DEBDIR)/debug/
+MEMTRACESRC=usr/lib/libzorpll-5.0.so.0.0.0
+DBGSRC=usr/lib/libzorpll-5.0.so.0.0.0 usr/lib/libzorpll-5.0.so.0
+TARGETDIR=$(DEBDIR)/tmp
+MEMTRACEDEST=$(TARGETDIR)/usr/lib/debug
+DBGDEST=$(TARGETDIR)/usr/lib/debug/usr/lib
+
+%:
+	dh $@  --with autotools-dev --dbg-package=libzorpll-5.0-0-dbg
+
+override_dh_auto_configure:
+	mkdir -p m4
+	autoreconf -i
+	dh_auto_configure -- --enable-debug --enable-trace
+
+override_dh_auto_install:
+	dh_auto_install
+	mkdir -p $(MEMTRACEDEST) $(DBGDEST)
+	for i in $(DBGSRC); do objcopy --only-keep-debug $(TARGETDIR)/$$i $(DBGDEST)/`basename $$i` ;done
+	./configure --enable-debug --enable-trace \
+                --prefix=/usr \
+                --mandir=\$${prefix}/share/man \
+                --infodir=\$${prefix}/share/info \
+                --sysconfdir=/etc \
+                --libexecdir=\$${libdir}/libzorpll \
+                --enable-mem-trace
+	$(MAKE) install DESTDIR=$(MEMTRACEDIR)
+	for i in $(MEMTRACESRC); do cp -vdf $(MEMTRACEDIR)/$$i $(MEMTRACEDEST)/`basename $$i` ;done
+
+override_dh_makeshlibs:
+	dh_makeshlibs -Nlibzorpll-5.0-0-dbg -Nlibzorpll-5.0-0-memtrace
+clean:
+	dh $@  --with autotools-dev
+	rm -rf debian/debug config.guess.dh-orig config.sub.dh-orig
+

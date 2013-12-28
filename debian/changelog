@@ -1,0 +1,17 @@
+libzorpll (5.0.0.0ubuntu2) quantal; urgency=low
+
+  * build fix again
+
+ -- Árpád Magosányi <mag@balabit.hu>  Thu, 19 Dec 2013 22:08:28 +0100
+
+libzorpll (5.0.0.0ubuntu1) quantal; urgency=low
+
+  * build fix
+
+ -- Árpád Magosányi <mag@balabit.hu>  Thu, 19 Dec 2013 18:32:42 +0100
+
+libzorpll (5.0.0.0) quantal; urgency=low
+
+  * New upstream version
+
+ -- Árpád Magosányi <mag@balabit.hu>  Thu, 19 Dec 2013 13:32:37 +0100

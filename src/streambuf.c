@@ -79,7 +79,7 @@ typedef struct _ZStreamBuf
   GError *flush_error;
   gsize current_size;
   GList *buffers;
-  GStaticMutex buffer_lock;
+  GMutex buffer_lock;
 } ZStreamBuf;
 
 extern ZClass ZStreamBuf__class;
@@ -143,7 +143,7 @@ z_stream_buf_flush_internal(ZStreamBuf *self)
   GError *local_error = NULL;
 
   z_enter();
-  g_static_mutex_lock(&self->buffer_lock);
+  g_mutex_lock(&self->buffer_lock);
   while (self->buffers && i && res == G_IO_STATUS_NORMAL)
     {
       packet = (ZPktBuf *) self->buffers->data;
@@ -167,7 +167,7 @@ z_stream_buf_flush_internal(ZStreamBuf *self)
         }
       i--;
     }
-  g_static_mutex_unlock(&self->buffer_lock);
+  g_mutex_unlock(&self->buffer_lock);
   z_return();
 }
 
@@ -297,20 +297,20 @@ z_stream_write_packet_internal(ZStream *s, ZPktBuf *packet, GError **error)
   
   z_enter();
   self = Z_CAST(z_stream_search_stack(s, G_IO_OUT, Z_CLASS(ZStreamBuf)), ZStreamBuf);
-  g_static_mutex_lock(&self->buffer_lock);
+  g_mutex_lock(&self->buffer_lock);
   if (self->current_size > MAX_BUF_LEN)
     z_log(s->name, CORE_ERROR, 0, "Internal error, ZStreamBuf internal buffer became too large, continuing anyway; current_size='%zd'", self->current_size);
   if (self->flush_error)
     {
       if (error)
         *error = g_error_copy(self->flush_error);
-      g_static_mutex_unlock(&self->buffer_lock);
+      g_mutex_unlock(&self->buffer_lock);
       z_return(G_IO_STATUS_ERROR);
     }
   
   self->buffers = g_list_append(self->buffers, packet);
   self->current_size += packet->length;
-  g_static_mutex_unlock(&self->buffer_lock);
+  g_mutex_unlock(&self->buffer_lock);
   if (self->flags & Z_SBF_IMMED_FLUSH)
     z_stream_buf_flush_internal(self);
   z_return(G_IO_STATUS_NORMAL);
@@ -605,6 +605,7 @@ z_stream_buf_new(ZStream *child, gsize buf_threshold, guint32 flags)
   z_enter();
   g_return_val_if_fail(buf_threshold <= MAX_BUF_LEN, NULL);
   self = Z_CAST(z_stream_new(Z_CLASS(ZStreamBuf), child ? child->name : "", G_IO_OUT), ZStreamBuf);
+  g_mutex_init(&self->buffer_lock);
   self->buf_threshold = buf_threshold;
   self->flags = flags;
   z_stream_set_child(&self->super, child);

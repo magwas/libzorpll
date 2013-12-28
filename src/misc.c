@@ -189,6 +189,34 @@ g_string_assign_len(GString *s, const gchar *val, gint len)
 }
 
 /**
+ * @brief Assign a string from the specified GString.
+ * @param target destination string
+ * @param source source string
+ * @return the GString instance (same as target)
+ */
+GString *
+g_string_assign_gstring(GString *target, const GString *source)
+{
+  return g_string_assign_len(target, source->str, source->len);
+}
+
+#if !GLIB_CHECK_VERSION(2, 28, 0)
+static void
+z_misc_g_list_free_full_foreach_helper(gpointer data, gpointer user_data)
+{
+  GDestroyNotify free_func = (GDestroyNotify) user_data;
+  free_func(data);
+}
+
+void
+g_list_free_full(GList *list, GDestroyNotify free_func)
+{
+  g_list_foreach(list, z_misc_g_list_free_full_foreach_helper, free_func);
+  g_list_free(list);
+}
+#endif
+
+/**
  * Compares t1 and t2
  *
  * @param[in] t1 time value t1

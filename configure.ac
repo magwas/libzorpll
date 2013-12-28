@@ -5,7 +5,6 @@ dnl makes use of in addition to the standard CFLAGS/LDFLAGS/etc. These are:
 dnl
 dnl RELEASE_TAG        - Debian release tag which is put to debian/changelog
 dnl SNAPSHOT_VERSION   - snapshot version to add to version number
-dnl BINARY_BRANCH      - the value is added to all source/binary packages
 dnl SOURCE_REVISION    - Revision of the source-tree, will added to the version string
 dnl
 AC_INIT(src/log.c)
@@ -39,7 +38,7 @@ esac
 if test -r $srcdir/dist.conf; then
 	# read defaults, dist.conf does not change
 	# values for parameters that are already set
-	source $srcdir/dist.conf
+	. $srcdir/dist.conf
 fi
 
 
@@ -53,19 +52,12 @@ if test -z "$RELEASE_TAG"; then
 	RELEASE_TAG=zorp30dbg
 fi
 
-if test -n "$BINARY_BRANCH"; then
-	BINARY_BRANCH="-$BINARY_BRANCH"
-	PACKAGE=$PACKAGE$BINARY_BRANCH
-else
-	BINARY_BRANCH=""
-fi
-
 if test -z "$libexecdir" || test "x${libexecdir}" = "xNONE"; then
         libexecdir=${libdir}/libzorpll
 fi
 
 AM_INIT_AUTOMAKE($PACKAGE, $VERSION, no-define)
-m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES])
+m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 ZORPLIBLL_VERSION=$VERSION
 
 AM_CONFIG_HEADER(src/zorp/zorplibconfig.h)
@@ -79,10 +71,6 @@ AC_ARG_ENABLE(trace,
               [  --enable-trace       Enable trace information & messages (default: no)],,
               enable_trace=no)
 
-AC_ARG_ENABLE(werror,
-              [  --enable-werror      When enabled, treat compiler warnings as errors (default: yes)],,
-              enable_werror=yes)
-
 AC_ARG_ENABLE(mem-trace,
               [  --enable-mem-trace   Enable memory trace (default: no)],,
               enable_mem_trace=no)
@@ -91,17 +79,13 @@ AC_ARG_ENABLE(caps,
               [  --enable-caps        Enable using POSIX 1003.e capabilities (default: autodetect)],,
               enable_caps=auto)
 
-AC_ARG_ENABLE(residual-protection,
-              [  --enable-residual-protection   Enable residual information protection by clearing all allocated memory blocks],,
-              enable_residual_protection=no)
-
 AC_ARG_ENABLE(stackdump,
               [  --enable-stackdump   Enable stackdump when a fatal signal is encountered (default: auto)],,
               enable_stackdump=auto)
 
 AC_ARG_ENABLE(ssl-engine,
               [  --enable-ssl-engine   Enable OpenSSL engine support (default: auto)],,
-              enable_ssl_engine=auto)
+              enable_ssl_engine=yes)
 
 AC_ARG_ENABLE(tos,
               [  --enable-tos          Enable ToS manipulation routines (default: auto)],,
@@ -114,10 +98,6 @@ if test "x$enable_debug" = "xyes"; then
   CFLAGS="$CFLAGS -O0"
 else
   CFLAGS="$CFLAGS -O2"
-fi
-
-if test "x$enable_werror" = "xyes"; then
-  CFLAGS="$CFLAGS -Werror"
 fi
 
 dnl Checks for programs.
@@ -329,7 +309,7 @@ VERSION_COMPAT=`echo $VERSION_NOSNAPSHOT |  cut -d '.' -f 3`
 VERSION_AGE=`echo $VERSION_NOSNAPSHOT |  cut -d '.' -f 4`
 
 LIBZORPLL_LT_RELEASE="$VERSION_MAJOR.$VERSION_MINOR"
-LIBZORPLL_LT_CURRENT=$@<:@ $VERSION_COMPAT + $VERSION_AGE @:>@
+LIBZORPLL_LT_CURRENT=$(( $VERSION_COMPAT + $VERSION_AGE ))
 LIBZORPLL_LT_COMPAT_BRANCH="$VERSION_MAJOR.$VERSION_MINOR-$VERSION_COMPAT"
 LIBZORPLL_LT_COMPAT_PL="$VERSION_COMPAT"
 LIBZORPLL_LT_AGE="$VERSION_AGE"
@@ -369,14 +349,12 @@ AC_DEFINE_UNQUOTED(ZORPLIB_ENABLE_DEBUG, `enable_value $enable_debug`, [enable d
 AC_DEFINE_UNQUOTED(ZORPLIB_ENABLE_TRACE, `enable_value $enable_trace`, [enable trace])
 AC_DEFINE_UNQUOTED(ZORPLIB_ENABLE_MEM_TRACE, `enable_value $enable_mem_trace`, [enable memtrace])
 AC_DEFINE_UNQUOTED(ZORPLIB_ENABLE_CAPS, `enable_value $enable_caps`, [enable caps])
-AC_DEFINE_UNQUOTED(ZORPLIB_ENABLE_RESIDUAL_PROTECTION, `enable_value $enable_residual protection`, [enable residual protection])
 AC_DEFINE_UNQUOTED(ZORPLIB_ENABLE_SSL_ENGINE, `enable_value $enable_ssl_engine`, [enable ssl engine])
 AC_DEFINE_UNQUOTED(ZORPLIB_ENABLE_STACKDUMP, `enable_value $enable_stackdump`, [enable stack dump])
 AC_DEFINE_UNQUOTED(ZORPLIB_ENABLE_TOS, `enable_value $enable_tos`, [enable ToS manipulation])
 AC_DEFINE_UNQUOTED(ZORPLIB_PIDFILE_DIR, "$ZORPLIB_PIDFILE_DIR", [default PID file directory])
 AC_DEFINE_UNQUOTED(ZORPLIB_LIBEXECDIR, "`eval echo ${libexecdir}`", [libexecdir])
 AC_DEFINE_UNQUOTED(ZORPLIB_COMPAT_BRANCH,"`eval echo ${LIBZORPLL_LT_COMPAT_BRANCH}`", [Binary compatibility version])
-AC_DEFINE_UNQUOTED(ZORPLIB_BINARY_BRANCH,"`eval echo ${BINARY_BRANCH}`", [Binary branch])
 AC_DEFINE_UNQUOTED(ZORPLIB_TEMP_DIR, "$ZORPLIB_TEMP_DIR", [default temporary directory])
 
 cat <<EOF
@@ -388,7 +366,6 @@ debug: $enable_debug
 trace: $enable_trace
 mem_trace: $enable_mem_trace
 caps: $enable_caps
-residual_protection: $enable_residual_protection
 stackdump: $enable_stackdump
 ssl_engine: $enable_ssl_engine
 tos: $enable_tos
@@ -404,7 +381,6 @@ DEPS_LIBS="$LIBS $GLIB_LIBS $OPENSSL_LIBS"
 LIBS="$ZORP_LIBS $DEPS_LIBS"
 
 AC_SUBST(SNAPSHOT_VERSION)
-AC_SUBST(BINARY_BRANCH)
 AC_SUBST(RELEASE_TAG)
 AC_SUBST(SOURCE_REVISION)
 AC_SUBST(ZORPLIBLL_VERSION)
@@ -428,6 +404,9 @@ AC_SUBST(ZORPLIB_TEMP_DIR)
 AC_OUTPUT(
 Makefile
 dist.conf
+debian/Makefile
+winbuild/Makefile
+tgz2build/Makefile
 src/libzorpll.rc
 src/Makefile
 src/zorp/Makefile
@@ -435,5 +414,4 @@ scripts/Makefile
 src/zorp/zorplibconfig.h-win32
 tests/Makefile
 zorplibll.pc
-zorplibll.spec
 )

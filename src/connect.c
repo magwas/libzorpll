@@ -110,12 +110,12 @@ z_connector_connected(gboolean timed_out, gpointer data)
       self->fd = -1;
     }
   
-  g_static_rec_mutex_lock(&self->lock);
+  g_rec_mutex_lock(&self->lock);
   
   if (self->watch)
     {
       if (error_num)
-        g_set_error(&err, 0, error_num, "%s", error_num_str);
+        g_set_error(&err, G_IO_CHANNEL_ERROR, error_num, "%s", error_num_str);
       
       callback = self->callback;
       self->callback = NULL;
@@ -132,7 +132,7 @@ z_connector_connected(gboolean timed_out, gpointer data)
       z_log(self->session_id, CORE_DEBUG, 6, "Connection cancelled, not calling callback; fd='%d'", fd);
       close(fd);
     }
-  g_static_rec_mutex_unlock(&self->lock);
+  g_rec_mutex_unlock(&self->lock);
 
   /* don't poll again, and destroy associated source */
   z_return(FALSE);
@@ -358,7 +358,7 @@ z_connector_cancel(ZConnector *self)
 {
   z_enter();
   
-  g_static_rec_mutex_lock(&self->lock);
+  g_rec_mutex_lock(&self->lock);
   if(self->watch)
     {
       /* Must unlock self->lock before call g_source_destroy,
@@ -369,14 +369,14 @@ z_connector_cancel(ZConnector *self)
        */
       GSource *watch = self->watch;
       self->watch = NULL;
-      g_static_rec_mutex_unlock(&self->lock);
+      g_rec_mutex_unlock(&self->lock);
 
       g_source_destroy(watch);
       g_source_unref(watch);
     }
   else
     {
-      g_static_rec_mutex_unlock(&self->lock);
+      g_rec_mutex_unlock(&self->lock);
     }
   z_return();
 }
@@ -399,10 +399,15 @@ z_connector_set_timeout(ZConnector *self, gint timeout)
 void
 z_connector_set_tos(ZConnector *self, gint tos)
 {
-  self->tos = tos;
-
   if ((self->fd != -1) && tos > 0)
     z_fd_set_our_tos(self->fd, tos);
+}
+
+void
+z_connector_set_mark(ZConnector *self, int mark)
+{
+  if ((self->fd != -1) && mark > 0)
+    z_fd_set_our_mark(self->fd, mark);
 }
 
 /**
@@ -485,6 +490,7 @@ z_connector_new(ZClass *class_,
   
   z_enter();
   self = Z_NEW_COMPAT(class_, ZConnector);
+  g_rec_mutex_init(&self->lock);
   self->refcnt = 1;
   self->local = z_sockaddr_ref(local);
   self->remote = z_sockaddr_ref(remote);
@@ -494,7 +500,6 @@ z_connector_new(ZClass *class_,
   self->destroy_data = destroy_data;
   self->timeout = 30;
   self->sock_flags = sock_flags;
-  self->tos = -1;
   self->socket_type = socket_type;
   self->fd = z_connector_open_socket(self);
   if (self->fd < 0)

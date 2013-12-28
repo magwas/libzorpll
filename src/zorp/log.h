@@ -117,7 +117,7 @@ const gchar *z_log_session_id(const gchar *session_id);
  *
  * @see z_format_data_dump()
  **/
-static inline void 
+static inline void
 z_log_data_dump(const gchar *session_id, const gchar *class_, gint level, const void *buf, guint len)
 {
   if (z_log_enabled(class_, level))
@@ -138,7 +138,7 @@ z_log_data_dump(const gchar *session_id, const gchar *class_, gint level, const 
  *
  * @see z_format_text_dump()
  **/
-static inline void 
+static inline void
 z_log_text_dump(const gchar *session_id, const gchar *class_, gint level, const char *buf, guint len)
 {
   if (z_log_enabled(class_, level))
@@ -158,7 +158,7 @@ z_log_trace_indent(gint dir);
  * @see the Win32 implementation as z_log() in log.c.
  **/
 #ifdef G_OS_WIN32
-  void z_log(const gchar* session_id, const gchar* class_, int level, gchar* format, ...);
+  void z_log(const gchar* session_id, const gchar* class_, int level, const gchar* format, ...);
 #else
   #define z_log(session_id, class_, level, format, args...) \
     do \
@@ -182,6 +182,7 @@ z_log_trace_indent(gint dir);
   #define z_session_cp(s) z_log(s, CORE_TRACE, 7, "%sCheckpoint %s (%s:%d)", z_log_trace_indent(0), __FUNCTION__, __FILE__, __LINE__)
   #define z_enter() z_session_enter(NULL)
   #define z_leave() z_session_leave(NULL)
+  #define z_return(retval)      do { z_leave(); return retval; } while (0)
   #define z_cp() z_session_cp(NULL)
 #else
   #ifndef G_OS_WIN32
@@ -191,18 +192,18 @@ z_log_trace_indent(gint dir);
   #endif
   #define z_enter()
   #define z_leave()
+  #define z_return(retval)      return retval
   #define z_cp()
   #define z_session_enter(s)
   #define z_session_leave(s)
   #define z_session_cp(s)
 
 #endif
-  
+
 #ifdef G_OS_WIN32
   /* disable C4003: not enough actual parameters for macro 'z_return' */
 #pragma warning(disable: 4003)
 #endif
-#define z_return(retval)      do { z_leave(); return retval; } while (0)
 
 void z_log_set_defaults(gint verbose_level, gboolean use_syslog, gboolean n_log_tags, const gchar *n_log_spec);
 
