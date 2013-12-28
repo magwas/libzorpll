@@ -404,6 +404,9 @@ AC_SUBST(ZORPLIB_TEMP_DIR)
 AC_OUTPUT(
 Makefile
 dist.conf
+debian/Makefile
+winbuild/Makefile
+tgz2build/Makefile
 src/libzorpll.rc
 src/Makefile
 src/zorp/Makefile
