@@ -28,7 +28,7 @@
 gint max_threads = 100;
 static gint num_threads = 0;
 static gint max_stack_size = 512 * 1024;
-static GPrivate *current_thread;
+static GPrivate current_thread = G_PRIVATE_INIT(NULL);
 
 /**
  * Linked list of callback functions with a user data pointer for each.
@@ -60,7 +60,7 @@ z_thread_free(ZThread *self)
 ZThread *
 z_thread_self(void)
 {
-  return (ZThread *) g_private_get(current_thread);
+  return (ZThread *) g_private_get(&current_thread);
 }
 
 /**
@@ -124,7 +124,7 @@ z_thread_iterate_callbacks(ZThread *self, ZThreadCallback *p)
 static void
 z_thread_func_core(ZThread *self, gpointer user_data G_GNUC_UNUSED)
 {
-  g_private_set(current_thread, self);
+  g_private_set(&current_thread, self);
   self->thread = g_thread_self();
 
   z_thread_iterate_callbacks(self, start_callbacks);
@@ -213,7 +213,7 @@ z_thread_new(const gchar *name, GThreadFunc func, gpointer arg)
       num_threads++;
       g_async_queue_ref(queue);
       g_async_queue_unlock(queue);
-      if (!g_thread_create_full(z_thread_func, self, max_stack_size, FALSE, TRUE, G_THREAD_PRIORITY_NORMAL, &error))
+      if (!g_thread_new(name, z_thread_func, self))
         {
 	  /*LOG
 	    This message indicates that creating a new thread failed. It is likely that
@@ -276,9 +276,7 @@ z_thread_init(void)
   setrlimit(RLIMIT_STACK, &limit);
 #endif
 
-  g_thread_init(NULL);
   queue = g_async_queue_new();
-  current_thread = g_private_new(NULL);
 }
 
 /**

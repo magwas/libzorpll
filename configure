@@ -2995,7 +2995,7 @@ fi
 if test "${enable_ssl_engine+set}" = set; then :
   enableval=$enable_ssl_engine;
 else
-  enable_ssl_engine=auto
+  enable_ssl_engine=yes
 fi
 
 

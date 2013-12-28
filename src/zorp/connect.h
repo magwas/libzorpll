@@ -48,7 +48,7 @@ typedef struct _ZConnector
   gpointer user_data;
   GDestroyNotify destroy_data;
   gint refcnt;
-  GStaticRecMutex lock;
+  GRecMutex lock;
   GMainContext *context;
   gboolean blocking;
   gint socket_type;

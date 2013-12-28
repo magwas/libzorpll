@@ -171,8 +171,8 @@ test_deferred_alloc(ZBlobSystem *blobsys)
   blob[1] = z_blob_new(blobsys, 9500);  /* will be allocated on disk - 500 bytes remaining */
 
   send_log(NULL, CORE_DEBUG, 4, "-- creating threads for another 2 allocations");
-  thr[0] = g_thread_create((GThreadFunc)mk_blob_deferred1, (gpointer)blobsys, TRUE, NULL);
-  thr[1] = g_thread_create((GThreadFunc)mk_blob_deferred2, (gpointer)blobsys, TRUE, NULL);
+  thr[0] = g_thread_new("testanotherallocation1", (GThreadFunc)mk_blob_deferred1, (gpointer)blobsys);
+  thr[1] = g_thread_new("testanotherallocation2", (GThreadFunc)mk_blob_deferred2, (gpointer)blobsys);
   send_log(NULL, CORE_DEBUG, 4, "-- thread created, sleeping 3 sec");
   sleep(3);
   send_log(NULL, CORE_DEBUG, 4, "-- destroying blob[0]"); /* the deferred alloc shall succeed now */

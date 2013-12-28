@@ -67,10 +67,10 @@ z_listener_accept(gboolean timed_out G_GNUC_UNUSED, gpointer data)
   /* NOTE: self->lock protects cancellation, _cancel grabs self->lock thus
    * we either execute first and accept all fds, or self->watch will be
    * NULL and we return */
-  g_static_rec_mutex_lock(&self->lock);
+  g_rec_mutex_lock(&self->lock);
   if (!self->watch)
     {
-      g_static_rec_mutex_unlock(&self->lock);
+      g_rec_mutex_unlock(&self->lock);
       z_return(TRUE);
     }
     
@@ -105,7 +105,7 @@ z_listener_accept(gboolean timed_out G_GNUC_UNUSED, gpointer data)
         break;
     }
   z_listener_unref((ZListener *) self);
-  g_static_rec_mutex_unlock(&self->lock);
+  g_rec_mutex_unlock(&self->lock);
   
   /*LOG
     This message reports the number of accepted connections
@@ -263,10 +263,10 @@ z_listener_cancel(ZListener *self)
        * pending fds, or we NULL out self->watch and our accepted callback
        * won't call any user callbacks. It is therefore guaranteed that no
        * user callbacks will be called after cancellation */
-      g_static_rec_mutex_lock(&self->lock);
+      g_rec_mutex_lock(&self->lock);
       watch = self->watch;
       self->watch = NULL;
-      g_static_rec_mutex_unlock(&self->lock);
+      g_rec_mutex_unlock(&self->lock);
 
       g_source_destroy(watch);
       g_source_unref(watch);
@@ -300,6 +300,7 @@ z_listener_new(ZClass *class,
 
   z_enter();
   self = Z_NEW_COMPAT(class, ZListener);
+  g_rec_mutex_init(&self->lock);
   self->session_id = session_id ? g_strdup(session_id) : NULL;
   self->callback = callback;
   self->user_data = user_data;
