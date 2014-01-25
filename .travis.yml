@@ -1,5 +1,5 @@
 before_install:
-- wget http://download.opensuse.org/repositories/openSUSE:Tools/xUbuntu_13.10/Release.key
+- wget  http://download.opensuse.org/repositories/openSUSE:Tools/xUbuntu_13.10/Release.key
 - sudo apt-key add Release.key 
 - sudo apt-add-repository "deb http://download.opensuse.org/repositories/openSUSE:/Tools/xUbuntu_13.10/ /"
 - sudo apt-get update -qq
